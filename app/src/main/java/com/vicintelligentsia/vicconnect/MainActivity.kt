@@ -171,7 +171,7 @@ private fun VicConnectApp() {
                             val r = withContext(Dispatchers.IO) { api.login(code) }
                             if (!r.optBoolean("success", false)) error = r.optString("message", "Code incorrect.")
                             else { role = r.optString("role"); profileName = r.optString("full_name") }
-                        } catch (e: Exception) { error = "Impossible de joindre VIC-CONNECT. Vérifiez votre connexion Internet." }
+                        } catch (e: Exception) { error = "Connexion impossible : ${e.message?.take(140) ?: "erreur réseau ou serveur"}" }
                         finally { loading = false }
                     }
                 }

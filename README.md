@@ -32,3 +32,9 @@ La base comprend notamment Français, Anglais, Mathématiques, Sciences Physique
 ## Important
 
 Le fichier `supabase/schema-corrige.sql` est la version complète du schéma SQL corrigé déjà exécutée dans Supabase. Il est conservé dans le projet comme référence.
+
+## Correctif du 17/09/2026
+- `supabase/schema-corrige.sql` contient maintenant la correction définitive de `digest()` en utilisant `extensions.digest()`.
+- `supabase/migration-fix-codes.sql` est une migration NON DESTRUCTIVE à exécuter si la base VIC-CONNECT existe déjà. Elle corrige les codes sans supprimer les données et ajoute `admin_create_parent()`.
+- L'interface Web utilise désormais `admin_create_parent()` pour créer les parents seuls.
+- Le menu Super Admin met clairement en évidence la rubrique active en temps réel.

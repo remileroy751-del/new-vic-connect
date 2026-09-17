@@ -29,6 +29,7 @@ drop function if exists public.admin_reset_parent_code(uuid);
 drop function if exists public.admin_assign_teacher(uuid, uuid, uuid, boolean);
 drop function if exists public.admin_create_teacher(text, text);
 drop function if exists public.admin_create_student(text, uuid, text, text);
+drop function if exists public.admin_create_parent(text, text);
 drop function if exists public.bootstrap_admin(text);
 drop function if exists public.is_admin();
 drop function if exists public.hash_code(text);
@@ -250,11 +251,13 @@ create or replace function public.hash_code(p_code text)
 returns text
 language sql
 immutable
+strict
+set search_path = public, extensions
 as $$
   select encode(
-    digest(
+    extensions.digest(
       convert_to(upper(trim(p_code)), 'UTF8'),
-      'sha256'
+      'sha256'::text
     ),
     'hex'
   );
@@ -372,7 +375,52 @@ end;
 $$;
 
 -- ============================================================
--- 8. ÉLÈVE + PARENT
+-- 8. PARENT SEUL
+-- ============================================================
+
+create or replace function public.admin_create_parent(
+  p_full_name text,
+  p_phone text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_parent_id uuid;
+  v_code text;
+begin
+  if not public.is_admin() then
+    raise exception 'Accès Direction requis.';
+  end if;
+
+  if nullif(trim(p_full_name), '') is null then
+    raise exception 'Nom du parent obligatoire.';
+  end if;
+
+  loop
+    v_code := public.make_code(4);
+    exit when not exists (
+      select 1 from public.parents
+      where access_code_hash = public.hash_code(v_code)
+    );
+  end loop;
+
+  insert into public.parents(full_name, phone, access_code_hash)
+  values (trim(p_full_name), nullif(trim(p_phone), ''), public.hash_code(v_code))
+  returning id into v_parent_id;
+
+  return jsonb_build_object(
+    'success', true,
+    'parent_id', v_parent_id,
+    'parent_code', v_code
+  );
+end;
+$$;
+
+-- ============================================================
+-- 9. ÉLÈVE + PARENT
 -- ============================================================
 
 create or replace function public.admin_create_student(
@@ -455,7 +503,7 @@ end;
 $$;
 
 -- ============================================================
--- 9. ENSEIGNANT
+-- 10. ENSEIGNANT
 -- ============================================================
 
 create or replace function public.admin_create_teacher(
@@ -500,7 +548,7 @@ end;
 $$;
 
 -- ============================================================
--- 10. AFFECTATION ENSEIGNANT / CLASSE / MATIÈRE
+-- 11. AFFECTATION ENSEIGNANT / CLASSE / MATIÈRE
 -- ============================================================
 
 create or replace function public.admin_assign_teacher(
@@ -557,7 +605,7 @@ end;
 $$;
 
 -- ============================================================
--- 11. NOUVEAUX CODES
+-- 12. NOUVEAUX CODES
 -- ============================================================
 
 create or replace function public.admin_reset_parent_code(p_parent_id uuid)
@@ -635,7 +683,7 @@ end;
 $$;
 
 -- ============================================================
--- 12. COMMUNIQUÉS
+-- 13. COMMUNIQUÉS
 -- ============================================================
 
 create or replace function public.admin_create_announcement(
@@ -710,7 +758,7 @@ end;
 $$;
 
 -- ============================================================
--- 13. CONNEXION PAR CODE
+-- 14. CONNEXION PAR CODE
 -- ============================================================
 
 create or replace function public.login_with_access_code(p_code text)
@@ -770,7 +818,7 @@ end;
 $$;
 
 -- ============================================================
--- 14. PARENT : ENFANTS
+-- 15. PARENT : ENFANTS
 -- ============================================================
 
 create or replace function public.parent_children(p_code text)
@@ -1362,7 +1410,9 @@ grant execute on function public.admin_assign_teacher(uuid, uuid, uuid, boolean)
 grant execute on function public.admin_reset_parent_code(uuid) to authenticated;
 grant execute on function public.admin_reset_teacher_code(uuid) to authenticated;
 grant execute on function public.admin_create_announcement(text, text, text, text, uuid, uuid, uuid) to authenticated;
+grant execute on function public.admin_create_parent(text, text) to authenticated;
 
 -- ============================================================
 -- FIN DU SCHÉMA VIC-CONNECT
 -- ============================================================
+
