@@ -120,7 +120,7 @@ async function bootstrap(){
 }
 async function start(){const {data:{user}}=await sb.auth.getUser();if(!user)return;await ensureParentLinks();$('login').classList.add('hidden');$('app').classList.remove('hidden');$('userEmail').textContent=user.email||'Direction';$('adminInfo').textContent='Compte connecté : '+(user.email||'');document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.sec));await loadAll()}
 async function logout(){await sb.auth.signOut();location.reload()}
-function show(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');const b=document.querySelector(`[data-sec="${id}"]`);$('pageTitle').textContent=b?b.textContent.replace(/^\S+\s*/,''):id;if(id==='messages')loadMessages();if(id==='receipts')loadReceipts()}
+function show(id){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');const b=document.querySelector(`[data-sec="${id}"]`);if(b)b.classList.add('active');$('pageTitle').textContent=b?b.textContent.replace(/^\S+\s*/,''):id;if(id==='messages')loadMessages();if(id==='receipts')loadReceipts()}
 async function loadAll(){
  const q=await Promise.all([
   sb.from('classes').select('*').order('name'),sb.from('subjects').select('*').order('name'),sb.from('parents').select('id,full_name,phone,created_at').order('full_name'),
