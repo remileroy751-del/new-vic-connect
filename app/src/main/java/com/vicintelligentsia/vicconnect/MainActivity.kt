@@ -199,17 +199,54 @@ private fun VicConnectApp(prefs: android.content.SharedPreferences) {
 
 @Composable
 private fun LoginScreen(code: String, onCode: (String) -> Unit, error: String, loading: Boolean, onLogin: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Image(painterResource(R.drawable.vic_logo), contentDescription = "VIC-INTELLIGENTSIA", modifier = Modifier.size(150.dp), contentScale = ContentScale.Fit)
-        Spacer(Modifier.height(10.dp))
-        Text("VIC-CONNECT", color = DarkGreen, fontSize = 30.sp, fontWeight = FontWeight.Black)
-        Text("Votre espace scolaire sécurisé", color = Color.Gray, fontSize = 14.sp)
-        Spacer(Modifier.height(28.dp))
-        OutlinedTextField(value = code, onValueChange = { onCode(it.filter(Char::isLetterOrDigit).take(5).uppercase()) }, label = { Text("Code d'accès") }, placeholder = { Text("4 caractères parent / 5 enseignant") }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp))
+    Column(
+        Modifier.fillMaxSize().padding(horizontal = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painterResource(R.drawable.vic_logo),
+            contentDescription = "VIC-INTELLIGENTSIA",
+            modifier = Modifier.size(150.dp),
+            contentScale = ContentScale.Fit
+        )
+        Spacer(Modifier.height(8.dp))
+        Text("VIC-INTELLIGENTSIA", color = DarkGreen, fontSize = 19.sp, fontWeight = FontWeight.Black)
+        Text("VIC-CONNECT", color = DarkGreen, fontSize = 29.sp, fontWeight = FontWeight.Black)
+        Text("Lomé-Avépozo", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text("Tél: +228 90 02 80 15 & 22 71 06 02", color = Color.Gray, fontSize = 12.sp)
+        Spacer(Modifier.height(24.dp))
+        OutlinedTextField(
+            value = code,
+            onValueChange = { onCode(it.filter(Char::isLetterOrDigit).take(5).uppercase()) },
+            label = { Text("Code d'accès") },
+            placeholder = { Text("4 caractères parent / 5 enseignant") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        )
         Spacer(Modifier.height(14.dp))
-        Button(onClick = onLogin, enabled = code.length in 4..5 && !loading, modifier = Modifier.fillMaxWidth().height(54.dp), shape = RoundedCornerShape(16.dp)) { Text(if (loading) "Connexion..." else "ACCÉDER À MON ESPACE", fontWeight = FontWeight.Bold) }
-        if (error.isNotBlank()) { Spacer(Modifier.height(12.dp)); Text(error, color = Red, fontSize = 13.sp) }
-        Spacer(Modifier.height(24.dp)); Text("Votre dernier code est mémorisé localement sur ce téléphone.", color = Color.Gray, fontSize = 11.sp)
+        Button(
+            onClick = onLogin,
+            enabled = code.length in 4..5 && !loading,
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(if (loading) "Connexion..." else "ACCÉDER À MON ESPACE", fontWeight = FontWeight.Bold)
+        }
+        if (error.isNotBlank()) {
+            Spacer(Modifier.height(12.dp))
+            Text(error, color = Red, fontSize = 13.sp)
+        }
+        Spacer(Modifier.height(22.dp))
+        Text(
+            "Contact permanent entre Parents - Enseignants et la Direction.",
+            color = DarkGreen,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(Modifier.height(8.dp))
+        Text("Votre dernier code est mémorisé localement sur ce téléphone.", color = Color.Gray, fontSize = 11.sp)
     }
 }
 
@@ -340,8 +377,9 @@ private fun TeacherHome(api: VicApi, code: String, teacherName: String, logout: 
     var step by remember { mutableStateOf("assignments") }
     val scope = rememberCoroutineScope()
 
-    BackHandler(enabled = step != "assignments") {
+    BackHandler(enabled = true) {
         when (step) {
+            "assignments" -> logout()
             "noteTypes" -> { selectedAssignment = null; step = "assignments" }
             "students" -> { selectedStudent = null; step = "noteTypes" }
             "entry" -> { selectedStudent = null; step = "students" }
@@ -387,7 +425,20 @@ private fun TeacherHome(api: VicApi, code: String, teacherName: String, logout: 
                 Text("${selectedAssignment!!.subjectName} • ${if (noteType == "moyenne_classe") "Moyenne de classe" else if (noteType == "composition") "Composition" else "Devoir"} • $term", color = Color.Gray)
                 Spacer(Modifier.height(20.dp))
                 if (noteType == "devoir") { OutlinedTextField(noteTitle, { noteTitle = it }, label = { Text("Libellé du devoir") }, modifier = Modifier.fillMaxWidth()); Spacer(Modifier.height(10.dp)) }
-                OutlinedTextField(noteValue, { noteValue = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.take(5) }, label = { Text("Note sur 20") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(
+                    value = noteValue,
+                    onValueChange = { raw ->
+                        val normalized = raw.replace(',', '.')
+                        if (normalized.matches(Regex("^\\d{0,2}(\\.\\d{0,2})?$"))) {
+                            noteValue = normalized
+                        }
+                    },
+                    label = { Text("Note sur 20") },
+                    placeholder = { Text("Ex. 8,75 ou 19,5") },
+                    supportingText = { Text("Jusqu'à 2 chiffres après la virgule") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = {
                     val v = noteValue.replace(',','.').toDoubleOrNull()

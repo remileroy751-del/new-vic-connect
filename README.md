@@ -29,3 +29,6 @@ La configuration Pages déjà activée peut rester telle quelle (`main` / `/(roo
 ## Android
 
 Le workflow compile avec Java 17, Gradle 8.9, Android SDK 35 et publie l'APK Debug comme artefact GitHub Actions.
+
+## Migration Supabase V4
+Après déploiement de cette version, exécuter **le contenu complet de `supabase/migration-v4.sql`** dans Supabase > SQL Editor. Cette migration configure la protection de création des classes par mot de passe Direction et conserve uniquement le hash du mot de passe en base.
